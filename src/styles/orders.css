@@ -1,0 +1,120 @@
+.orders-page {
+    background: #f5f7fb;
+    min-height: 100vh;
+}
+
+.orders-container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 30px;
+}
+
+.page-title {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: #111827;
+}
+
+/* EMPTY STATE */
+.empty-state {
+    background: white;
+    padding: 50px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    color: #6b7280;
+}
+
+.empty-state h2 {
+    color: #111827;
+    margin-bottom: 8px;
+}
+
+/* LIST */
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* CARD */
+.order-card {
+    background: white;
+    padding: 22px;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    transition: 0.2s ease;
+}
+
+.order-card:hover {
+    transform: translateY(-3px);
+}
+
+/* HEADER */
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.order-id {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+}
+
+/* STATUS BADGE */
+.status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+}
+
+.status-badge.active {
+    background: #16a34a;
+}
+
+.status-badge.cancelled {
+    background: #dc2626;
+}
+
+/* DIVIDER */
+.order-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 14px 0;
+}
+
+/* DETAILS */
+.order-details p {
+    margin: 6px 0;
+    color: #374151;
+    font-size: 14px;
+}
+
+.order-details span {
+    font-weight: 600;
+    color: #111827;
+}
+
+/* CANCEL BUTTON */
+.cancel-btn {
+    margin-top: 12px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #dc2626;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.cancel-btn:hover {
+    background: #b91c1c;
+}

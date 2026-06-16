@@ -1,0 +1,133 @@
+.address-page {
+    background: #f5f7fb;
+    min-height: 100vh;
+}
+
+.address-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 30px;
+}
+
+.page-title {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: #111827;
+}
+
+/* GRID */
+.address-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+}
+
+/* SECTION TITLE */
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #111827;
+}
+
+/* FORM CARD */
+.address-form-card {
+    background: white;
+    padding: 22px;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* FORM */
+.address-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.address-input {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    outline: none;
+    transition: 0.2s;
+}
+
+.address-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* SAVE BUTTON */
+.save-btn {
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.save-btn:hover {
+    background: #1d4ed8;
+}
+
+/* LIST */
+.address-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* CARD */
+.address-card {
+    background: white;
+    padding: 18px;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    transition: 0.2s;
+}
+
+.address-card:hover {
+    transform: translateY(-3px);
+}
+
+.address-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #111827;
+}
+
+.address-line {
+    font-size: 13px;
+    color: #4b5563;
+    margin: 3px 0;
+}
+
+.address-id {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+/* EMPTY */
+.empty-box {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    text-align: center;
+    color: #6b7280;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+    .address-grid {
+        grid-template-columns: 1fr;
+    }
+}
