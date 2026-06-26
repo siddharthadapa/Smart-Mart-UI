@@ -4,100 +4,81 @@ import API from "../api/axiosConfig";
 import Navbar from "../components/Navbar";
 import "../styles/cart.css";
 
+const PAYMENT_METHODS = [
+    { key: "COD", label: "💵 Cash On Delivery" },
+    { key: "UPI", label: "📲 UPI Transfer" },
+    { key: "CARD", label: "💳 Debit/Credit Card" },
+    { key: "GIFT_CARD", label: "🎁 Gift Voucher" },
+];
+
 function Cart() {
     const navigate = useNavigate();
     const [cart, setCart] = useState(null);
-    const [total, setTotal] = useState(0);
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState("");
     const [processing, setProcessing] = useState(false);
 
-    // Form inputs state management controls
-    const [paymentMethod, setPaymentMethod] = useState("COD"); // Defaults to Cash on Delivery
-    const [upiId, setUpiId] = useState("");
-    const [cardNumber, setCardNumber] = useState("");
-    const [cardExpiry, setCardExpiry] = useState("");
-    const [cardCvv, setCardCvv] = useState("");
-    const [voucherCode, setVoucherCode] = useState("");
+    const [payment, setPayment] = useState({
+        method: "COD",
+        upiId: "",
+        cardNumber: "",
+        cardExpiry: "",
+        cardCvv: "",
+        voucherCode: "",
+    });
+    const updatePayment = (patch) => setPayment((prev) => ({ ...prev, ...patch }));
 
     useEffect(() => {
-        getCart();
-        getUserAddresses();
+        const userId = localStorage.getItem("userId");
+
+        API.get(`/api/cart/${userId}`)
+            .then((res) => setCart(res.data))
+            .catch((error) => console.error("Error fetching cart:", error));
+
+        API.get(`/api/address/${userId}`)
+            .then((res) => {
+                setAddresses(res.data);
+                if (res.data.length > 0) setSelectedAddressId(res.data[0].id);
+            })
+            .catch((error) => console.error("Error fetching addresses:", error));
     }, []);
 
-    const getCart = async () => {
-        try {
-            const userId = localStorage.getItem("userId");
-            const response = await API.get(`/api/cart/${userId}`);
-            setCart(response.data);
-            calculateTotal(response.data);
-        } catch (error) {
-            console.error("Error fetching cart:", error);
-        }
-    };
-
-    const getUserAddresses = async () => {
-        try {
-            const userId = localStorage.getItem("userId");
-            const response = await API.get(`/api/address/${userId}`);
-            setAddresses(response.data);
-            if (response.data.length > 0) {
-                setSelectedAddressId(response.data[0].id); 
-            }
-        } catch (error) {
-            console.error("Error fetching addresses:", error);
-        }
-    };
-
-    const calculateTotal = (cartData) => {
-        if (!cartData || !cartData.items) {
-            setTotal(0);
-            return;
-        }
-        let amount = cartData.items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-        setTotal(amount);
-    };
+    const total = (cart?.items || []).reduce(
+        (sum, item) => sum + item.product.price * item.quantity,
+        0
+    );
 
     const placeOrderPipeline = async () => {
         if (!selectedAddressId) {
             alert("Please add and select a shipping address first!");
             return;
         }
-
-        // Enforce frontend field validations based on payment selection types
-        if (paymentMethod === "UPI" && !upiId.trim().includes("@")) {
+        if (payment.method === "UPI" && !payment.upiId.includes("@")) {
             alert("Please enter a valid UPI ID (e.g., name@okaxis)");
             return;
         }
-        if (paymentMethod === "CARD" && (cardNumber.trim().length < 16 || !cardExpiry || !cardCvv)) {
+        if (payment.method === "CARD" && (payment.cardNumber.trim().length < 16 || !payment.cardExpiry || !payment.cardCvv)) {
             alert("Please provide valid Card information parameters.");
             return;
         }
-        if (paymentMethod === "GIFT_CARD" && voucherCode.trim().length < 3) {
+        if (payment.method === "GIFT_CARD" && payment.voucherCode.trim().length < 3) {
             alert("Please enter a valid Gift Voucher code.");
             return;
         }
 
+        setProcessing(true);
         try {
-            setProcessing(true);
             const userId = localStorage.getItem("userId");
-
-            // Step 1: Execute master order placement allocation transaction
             const orderResponse = await API.post(`/api/orders/place/${userId}/${selectedAddressId}`);
-            const placedOrder = orderResponse.data;
 
-            // Step 2: Build parameters payload block mapping configurations matching the DTO fields
-            const paymentRequestPayload = {
-                paymentMethod: paymentMethod,
-                upiId: upiId,
-                cardNumber: cardNumber,
-                voucherCode: voucherCode
-            };
+            await API.post(`/api/payments/pay/${orderResponse.data.id}`, {
+                paymentMethod: payment.method,
+                upiId: payment.upiId,
+                cardNumber: payment.cardNumber,
+                voucherCode: payment.voucherCode,
+            });
 
-            // Step 3: Dispatch payment context values downstream to save transaction status logs
-            await API.post(`/api/payments/pay/${placedOrder.id}`, paymentRequestPayload);
-
-            alert(`Order Placed Successfully via ${paymentMethod}!`);
+            alert(`Order Placed Successfully via ${payment.method}!`);
             navigate("/orders");
         } catch (error) {
             console.error("Checkout Exception Error Details:", error);
@@ -113,50 +94,37 @@ function Cart() {
             <div className="cart-container">
                 <h1 className="page-title">My SmartMart Cart</h1>
 
-                {!cart || !cart.items || cart.items.length === 0 ? (
+                {!cart?.items || cart.items.length === 0 ? (
                     <div className="empty-cart">
                         <h2>Cart Is Empty</h2>
                         <p>Add some products to continue shopping</p>
                     </div>
                 ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px", alignItems: "start" }}>
-                        
-                        {/* ITEM REVIEWS LIST GRID CONTAINER */}
+                    <div className="cart-layout">
                         <div className="cart-items">
-                            <h2 style={{ fontSize: "20px", marginBottom: "15px", textAlign: "left", fontWeight: "700" }}>Selected Items</h2>
+                            <h2 className="cart-section-title">Selected Items</h2>
                             {cart.items.map((item) => (
                                 <div key={item.id} className="cart-card">
                                     <h2 className="item-title">{item.product.name}</h2>
-                                    <div className="item-row">
-                                        <span>Price:</span>
-                                        <span>₹ {item.product.price}</span>
-                                    </div>
-                                    <div className="item-row">
-                                        <span>Quantity:</span>
-                                        <span>{item.quantity}</span>
-                                    </div>
-                                    <div className="item-row total-row">
-                                        <span>Sub Total:</span>
-                                        <span>₹ {item.quantity * item.product.price}</span>
-                                    </div>
+                                    <div className="item-row"><span>Price:</span><span>₹ {item.product.price}</span></div>
+                                    <div className="item-row"><span>Quantity:</span><span>{item.quantity}</span></div>
+                                    <div className="item-row total-row"><span>Sub Total:</span><span>₹ {item.quantity * item.product.price}</span></div>
                                 </div>
                             ))}
                         </div>
 
-                        {/* ORDER LOGISTICS SUMMARY CARD AND OPTIONS PANELS */}
-                        <div className="cart-summary" style={{ textAlign: "left", padding: "24px" }}>
-                            <h2 style={{ fontSize: "20px", marginBottom: "15px", fontWeight: "700" }}>Order Summary</h2>
-                            
-                            {/* Address Drops Dynamic Selector Section */}
-                            <div className="address-select-box" style={{ marginBottom: "20px" }}>
-                                <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "14px" }}>Deliver To Destination:</label>
+                        <div className="cart-summary">
+                            <h2 className="cart-section-title">Order Summary</h2>
+
+                            <div className="address-select-box">
+                                <label className="cart-label">Deliver To Destination:</label>
                                 {addresses.length === 0 ? (
-                                    <p style={{ color: "red", fontSize: "13px" }}>No saved addresses found. Add one in the Address page view layout setup.</p>
+                                    <p className="cart-warning">No saved addresses found. Add one in the Address page.</p>
                                 ) : (
-                                    <select 
-                                        value={selectedAddressId} 
+                                    <select
+                                        value={selectedAddressId}
                                         onChange={(e) => setSelectedAddressId(e.target.value)}
-                                        style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
+                                        className="address-select"
                                     >
                                         {addresses.map((addr) => (
                                             <option key={addr.id} value={addr.id}>
@@ -167,89 +135,97 @@ function Cart() {
                                 )}
                             </div>
 
-                            {/* Payment Method Option Selection Grid */}
-                            <div style={{ marginBottom: "20px" }}>
-                                <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "14px" }}>Select Payment Mode:</label>
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                                    <button 
-                                        type="button"
-                                        onClick={() => setPaymentMethod("COD")}
-                                        style={{ padding: "12px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", border: "2px solid", borderColor: paymentMethod === "COD" ? "#2563eb" : "#ccc", background: paymentMethod === "COD" ? "#eff6ff" : "#fff" }}
-                                    >
-                                        💵 Cash On Delivery
-                                    </button>
-                                    <button 
-                                        type="button"
-                                        onClick={() => setPaymentMethod("UPI")}
-                                        style={{ padding: "12px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", border: "2px solid", borderColor: paymentMethod === "UPI" ? "#2563eb" : "#ccc", background: paymentMethod === "UPI" ? "#eff6ff" : "#fff" }}
-                                    >
-                                        📲 UPI Transfer
-                                    </button>
-                                    <button 
-                                        type="button"
-                                        onClick={() => setPaymentMethod("CARD")}
-                                        style={{ padding: "12px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", border: "2px solid", borderColor: paymentMethod === "CARD" ? "#2563eb" : "#ccc", background: paymentMethod === "CARD" ? "#eff6ff" : "#fff" }}
-                                    >
-                                        💳 Debit/Credit Card
-                                    </button>
-                                    <button 
-                                        type="button"
-                                        onClick={() => setPaymentMethod("GIFT_CARD")}
-                                        style={{ padding: "12px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", border: "2px solid", borderColor: paymentMethod === "GIFT_CARD" ? "#2563eb" : "#ccc", background: paymentMethod === "GIFT_CARD" ? "#eff6ff" : "#fff" }}
-                                    >
-                                        🎁 Gift Voucher
-                                    </button>
+                            <div className="payment-section">
+                                <label className="cart-label">Select Payment Mode:</label>
+                                <div className="payment-method-grid">
+                                    {PAYMENT_METHODS.map((m) => (
+                                        <button
+                                            key={m.key}
+                                            type="button"
+                                            className={`payment-btn ${payment.method === m.key ? "payment-btn-active" : ""}`}
+                                            onClick={() => updatePayment({ method: m.key })}
+                                        >
+                                            {m.label}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
-                            {/* DYNAMIC FORMS ACCORDING TO USER OPTION CLICKS */}
-                            {paymentMethod === "UPI" && (
-                                <div style={{ background: "#f9fafb", padding: "14px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "15px" }}>
-                                    <label style={{ fontSize: "13px", fontWeight: "600" }}>Enter Virtual Payment Address (UPI ID):</label>
-                                    <input type="text" placeholder="username@upi" value={upiId} onChange={(e) => setUpiId(e.target.value)} style={{ width: "100%", padding: "10px", marginTop: "5px", border: "1px solid #ccc", borderRadius: "6px" }} />
+                            {payment.method === "UPI" && (
+                                <div className="payment-fields">
+                                    <label className="cart-label">Enter Virtual Payment Address (UPI ID):</label>
+                                    <input
+                                        type="text"
+                                        placeholder="username@upi"
+                                        value={payment.upiId}
+                                        onChange={(e) => updatePayment({ upiId: e.target.value })}
+                                        className="address-input"
+                                    />
                                 </div>
                             )}
 
-                            {paymentMethod === "CARD" && (
-                                <div style={{ background: "#f9fafb", padding: "14px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "15px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                                    <div>
-                                        <label style={{ fontSize: "13px", fontWeight: "600" }}>Card Number:</label>
-                                        <input type="text" maxLength="16" placeholder="4321 5678 9876 5432" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} style={{ width: "100%", padding: "10px", marginTop: "3px", border: "1px solid #ccc", borderRadius: "6px" }} />
-                                    </div>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                            {payment.method === "CARD" && (
+                                <div className="payment-fields">
+                                    <label className="cart-label">Card Number:</label>
+                                    <input
+                                        type="text"
+                                        maxLength="16"
+                                        placeholder="4321 5678 9876 5432"
+                                        value={payment.cardNumber}
+                                        onChange={(e) => updatePayment({ cardNumber: e.target.value })}
+                                        className="address-input"
+                                    />
+                                    <div className="payment-fields-row">
                                         <div>
-                                            <label style={{ fontSize: "13px", fontWeight: "600" }}>Expiry:</label>
-                                            <input type="text" maxLength="5" placeholder="MM/YY" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} style={{ width: "100%", padding: "10px", marginTop: "3px", border: "1px solid #ccc", borderRadius: "6px" }} />
+                                            <label className="cart-label">Expiry:</label>
+                                            <input
+                                                type="text"
+                                                maxLength="5"
+                                                placeholder="MM/YY"
+                                                value={payment.cardExpiry}
+                                                onChange={(e) => updatePayment({ cardExpiry: e.target.value })}
+                                                className="address-input"
+                                            />
                                         </div>
                                         <div>
-                                            <label style={{ fontSize: "13px", fontWeight: "600" }}>CVV Security:</label>
-                                            <input type="password" maxLength="3" placeholder="***" value={cardCvv} onChange={(e) => setCardCvv(e.target.value)} style={{ width: "100%", padding: "10px", marginTop: "3px", border: "1px solid #ccc", borderRadius: "6px" }} />
+                                            <label className="cart-label">CVV Security:</label>
+                                            <input
+                                                type="password"
+                                                maxLength="3"
+                                                placeholder="***"
+                                                value={payment.cardCvv}
+                                                onChange={(e) => updatePayment({ cardCvv: e.target.value })}
+                                                className="address-input"
+                                            />
                                         </div>
                                     </div>
                                 </div>
                             )}
 
-                            {paymentMethod === "GIFT_CARD" && (
-                                <div style={{ background: "#f9fafb", padding: "14px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "15px" }}>
-                                    <label style={{ fontSize: "13px", fontWeight: "600" }}>Enter Active Voucher Code:</label>
-                                    <input type="text" placeholder="SMART-MART-500" value={voucherCode} onChange={(e) => setVoucherCode(e.target.value)} style={{ width: "100%", padding: "10px", marginTop: "5px", border: "1px solid #ccc", borderRadius: "6px" }} />
+                            {payment.method === "GIFT_CARD" && (
+                                <div className="payment-fields">
+                                    <label className="cart-label">Enter Active Voucher Code:</label>
+                                    <input
+                                        type="text"
+                                        placeholder="SMART-MART-500"
+                                        value={payment.voucherCode}
+                                        onChange={(e) => updatePayment({ voucherCode: e.target.value })}
+                                        className="address-input"
+                                    />
                                 </div>
                             )}
 
-                            {/* TOTAL METRICS DISPLAY HUB FOOTER CONTAINER */}
-                            <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: "15px", marginTop: "15px" }}>
-                                <h2 style={{ fontSize: "22px", color: "#111827", fontWeight: "700" }}>Total Amount: ₹ {total}</h2>
-                                <button 
-                                    className="place-order-btn" 
+                            <div className="cart-total-box">
+                                <h2 className="cart-total">Total Amount: ₹ {total}</h2>
+                                <button
+                                    className="place-order-btn"
                                     onClick={placeOrderPipeline}
-                                    disabled={processing || !cart || cart.items.length === 0}
-                                    style={{ width: "100%", padding: "12px", marginTop: "10px", fontSize: "15px" }}
+                                    disabled={processing}
                                 >
-                                    {processing ? "Verifying Transaction Details..." : `Place Order with ${paymentMethod}`}
+                                    {processing ? "Verifying Transaction Details..." : `Place Order with ${payment.method}`}
                                 </button>
                             </div>
                         </div>
-
                     </div>
                 )}
             </div>

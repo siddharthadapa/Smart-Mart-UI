@@ -7,7 +7,7 @@ import "../styles/addProduct.css";
 function AddProduct() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [categories, setCategories] = useState([]); // State to hold DB categories
+    const [categories, setCategories] = useState([]);
 
     const [product, setProduct] = useState({
         name: "",
@@ -15,33 +15,22 @@ function AddProduct() {
         price: "",
         stock: "",
         imageUrl: "",
-        categoryId: "", // Selected category from dropdown
+        categoryId: "",
     });
 
-    // Fetch categories on page load
     useEffect(() => {
-        loadCategories();
+        API.get("/api/categories")
+            .then((res) => {
+                setCategories(res.data);
+                if (res.data.length > 0) {
+                    setProduct((prev) => ({ ...prev, categoryId: res.data[0].id }));
+                }
+            })
+            .catch((error) => console.error("Failed to load categories:", error));
     }, []);
 
-    const loadCategories = async () => {
-        try {
-            const response = await API.get("/api/categories");
-            setCategories(response.data);
-            if (response.data.length > 0) {
-                setProduct(prev => ({ ...prev, categoryId: response.data[0].id }));
-            }
-        } catch (error) {
-            console.error("Failed to load categories:", error);
-        }
-    };
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setProduct({
-            ...product,
-            [name]: value,
-        });
-    };
+    const handleChange = (e) =>
+        setProduct({ ...product, [e.target.name]: e.target.value });
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
@@ -51,21 +40,14 @@ function AddProduct() {
             return;
         }
 
+        setLoading(true);
         try {
-            setLoading(true);
-
-            const productPayload = {
-                name: product.name,
-                description: product.description,
+            await API.post("/api/products", {
+                ...product,
                 price: Number(product.price),
                 stock: Number(product.stock),
-                imageUrl: product.imageUrl,
-                category: {
-                    id: Number(product.categoryId)
-                }
-            };
-
-            await API.post("/api/products", productPayload);
+                category: { id: Number(product.categoryId) },
+            });
             alert("Product Added Successfully!");
             navigate("/admin-products");
         } catch (error) {
@@ -85,67 +67,15 @@ function AddProduct() {
                     <h1 className="add-product-title">Add Product</h1>
 
                     <form onSubmit={handleFormSubmit} className="add-product-form">
-                        <input
-                            className="add-input"
-                            type="text"
-                            name="name"
-                            placeholder="Product Name"
-                            value={product.name}
-                            onChange={handleChange}
-                            required
-                        />
+                        <input className="add-input" type="text" name="name" placeholder="Product Name" value={product.name} onChange={handleChange} required />
+                        <textarea className="add-textarea" name="description" placeholder="Description" value={product.description} onChange={handleChange} required rows="4" />
+                        <input className="add-input" type="number" name="price" placeholder="Price" value={product.price} onChange={handleChange} required />
+                        <input className="add-input" type="number" name="stock" placeholder="Stock" value={product.stock} onChange={handleChange} required />
+                        <input className="add-input" type="text" name="imageUrl" placeholder="Image URL" value={product.imageUrl} onChange={handleChange} required />
 
-                        <textarea
-                            className="add-textarea"
-                            name="description"
-                            placeholder="Description"
-                            value={product.description}
-                            onChange={handleChange}
-                            required
-                            rows="4"
-                        />
-
-                        <input
-                            className="add-input"
-                            type="number"
-                            name="price"
-                            placeholder="Price"
-                            value={product.price}
-                            onChange={handleChange}
-                            required
-                        />
-
-                        <input
-                            className="add-input"
-                            type="number"
-                            name="stock"
-                            placeholder="Stock"
-                            value={product.stock}
-                            onChange={handleChange}
-                            required
-                        />
-
-                        <input
-                            className="add-input"
-                            type="text"
-                            name="imageUrl"
-                            placeholder="Image URL"
-                            value={product.imageUrl}
-                            onChange={handleChange}
-                            required
-                        />
-
-                        {/* Direct Selection Dropdown вместо Category ID input */}
-                        <div style={{ textAlign: "left", marginBottom: "15px" }}>
-                            <label style={{ fontWeight: "bold", fontSize: "14px" }}>Product Category:</label>
-                            <select
-                                className="add-input"
-                                name="categoryId"
-                                value={product.categoryId}
-                                onChange={handleChange}
-                                style={{ width: "100%", padding: "12px", marginTop: "5px" }}
-                                required
-                            >
+                        <div className="add-field-group">
+                            <label className="add-label">Product Category:</label>
+                            <select className="add-input add-select" name="categoryId" value={product.categoryId} onChange={handleChange} required>
                                 {categories.length === 0 ? (
                                     <option value="">-- No Categories Found in DB --</option>
                                 ) : (
@@ -158,19 +88,11 @@ function AddProduct() {
                             </select>
                         </div>
 
-                        <button
-                            type="submit"
-                            className="add-btn"
-                            disabled={loading}
-                        >
+                        <button type="submit" className="add-btn" disabled={loading}>
                             {loading ? "Adding Product..." : "Add Product"}
                         </button>
 
-                        <button
-                            type="button"
-                            className="cancel-btn"
-                            onClick={() => navigate("/admin-products")}
-                        >
+                        <button type="button" className="cancel-btn" onClick={() => navigate("/admin-products")}>
                             Cancel
                         </button>
                     </form>

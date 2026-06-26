@@ -8,29 +8,21 @@ function AdminProducts() {
     const [products, setProducts] = useState([]);
     const navigate = useNavigate();
 
+    const getProducts = () => {
+        API.get("/api/products")
+            .then((res) => setProducts(res.data))
+            .catch(console.log);
+    };
+
     useEffect(() => {
         getProducts();
     }, []);
 
-    const getProducts = async () => {
-        try {
-            const response = await API.get("/api/products");
-            setProducts(response.data);
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
     const deleteProduct = async (id) => {
-        const confirmDelete = window.confirm(
-            "Are you sure you want to delete this product?"
-        );
-
-        if (!confirmDelete) return;
+        if (!window.confirm("Are you sure you want to delete this product?")) return;
 
         try {
             await API.delete(`/api/products/${id}`);
-
             alert("Product Deleted Successfully");
             getProducts();
         } catch (error) {
@@ -44,42 +36,24 @@ function AdminProducts() {
             <Navbar />
 
             <div className="admin-container">
-                {/* HEADER */}
                 <div className="admin-header">
                     <h1>Admin Products</h1>
-
-                    <button
-                        className="add-product-btn"
-                        onClick={() => navigate("/add-product")}
-                    >
+                    <button className="add-product-btn" onClick={() => navigate("/add-product")}>
                         + Add Product
                     </button>
                 </div>
 
-                {/* GRID */}
                 <div className="admin-grid">
                     {products.map((product) => (
                         <div key={product.id} className="admin-card">
                             <div className="admin-image-wrapper">
-                                <img
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    className="admin-image"
-                                />
+                                <img src={product.imageUrl} alt={product.name} className="admin-image" />
                             </div>
 
                             <div className="admin-content">
-                                <h2 className="admin-title">
-                                    {product.name}
-                                </h2>
-
-                                <p className="admin-desc">
-                                    {product.description}
-                                </p>
-
-                                <div className="admin-price">
-                                    ₹ {product.price}
-                                </div>
+                                <h2 className="admin-title">{product.name}</h2>
+                                <p className="admin-desc">{product.description}</p>
+                                <div className="admin-price">₹ {product.price}</div>
 
                                 <div className="admin-meta">
                                     <span>Stock: {product.stock}</span>
@@ -87,23 +61,10 @@ function AdminProducts() {
                                 </div>
 
                                 <div className="admin-actions">
-                                    <button
-                                        className="update-btn"
-                                        onClick={() =>
-                                            navigate(
-                                                `/edit-product/${product.id}`
-                                            )
-                                        }
-                                    >
+                                    <button className="update-btn" onClick={() => navigate(`/edit-product/${product.id}`)}>
                                         Update
                                     </button>
-
-                                    <button
-                                        className="delete-btn"
-                                        onClick={() =>
-                                            deleteProduct(product.id)
-                                        }
-                                    >
+                                    <button className="delete-btn" onClick={() => deleteProduct(product.id)}>
                                         Delete
                                     </button>
                                 </div>

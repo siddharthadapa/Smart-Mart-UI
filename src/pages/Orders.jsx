@@ -6,36 +6,22 @@ import "../styles/orders.css";
 function Orders() {
     const [orders, setOrders] = useState([]);
 
+    const getOrders = () => {
+        const userId = localStorage.getItem("userId");
+        API.get(`/api/orders/user/${userId}`)
+            .then((res) => setOrders(res.data))
+            .catch(console.log);
+    };
+
     useEffect(() => {
         getOrders();
     }, []);
 
-    const getOrders = async () => {
-        try {
-            const userId = localStorage.getItem("userId");
-
-            const response = await API.get(
-                `/api/orders/user/${userId}`
-            );
-
-            setOrders(response.data);
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
     const cancelOrder = async (orderId) => {
-        const confirmCancel = window.confirm(
-            "Are you sure you want to cancel this order?"
-        );
-
-        if (!confirmCancel) return;
+        if (!window.confirm("Are you sure you want to cancel this order?")) return;
 
         try {
-            const response = await API.put(
-                `/api/orders/cancel/${orderId}`
-            );
-
+            const response = await API.put(`/api/orders/cancel/${orderId}`);
             alert(response.data);
             getOrders();
         } catch (error) {
@@ -61,17 +47,8 @@ function Orders() {
                         {orders.map((order) => (
                             <div key={order.id} className="order-card">
                                 <div className="order-header">
-                                    <h2 className="order-id">
-                                        Order #{order.id}
-                                    </h2>
-
-                                    <span
-                                        className={`status-badge ${
-                                            order.status === "CANCELLED"
-                                                ? "cancelled"
-                                                : "active"
-                                        }`}
-                                    >
+                                    <h2 className="order-id">Order #{order.id}</h2>
+                                    <span className={`status-badge ${order.status === "CANCELLED" ? "cancelled" : "active"}`}>
                                         {order.status}
                                     </span>
                                 </div>
@@ -79,21 +56,12 @@ function Orders() {
                                 <div className="order-divider" />
 
                                 <div className="order-details">
-                                    <p>
-                                        <span>Amount:</span> ₹{order.totalAmount}
-                                    </p>
-
-                                    <p>
-                                        <span>Date:</span>{" "}
-                                        {new Date(order.orderDate).toLocaleString()}
-                                    </p>
+                                    <p><span>Amount:</span> ₹{order.totalAmount}</p>
+                                    <p><span>Date:</span> {new Date(order.orderDate).toLocaleString()}</p>
                                 </div>
 
                                 {order.status !== "CANCELLED" && (
-                                    <button
-                                        className="cancel-btn"
-                                        onClick={() => cancelOrder(order.id)}
-                                    >
+                                    <button className="cancel-btn" onClick={() => cancelOrder(order.id)}>
                                         Cancel Order
                                     </button>
                                 )}
