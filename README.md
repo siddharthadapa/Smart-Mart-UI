@@ -1,64 +1,78 @@
 # Smart-Mart — E-Commerce Web Application
 
-A full-stack e-commerce platform (Amazon/Flipkart-style) with secure JWT authentication, product catalog, cart, and order management — built with Spring Boot, Spring Security, MySQL, and React.
+A full-stack e-commerce platform (Amazon/Flipkart-style) with JWT authentication, product catalog, cart, checkout, and order management — built with Spring Boot, Spring Security, MySQL, and React, and containerized with Docker.
 
 ## 🚀 Features
-<!-- Fill in what you actually built, remove what you didn't -->
 - User registration and login with JWT-based authentication
-- Browse and search product catalog
-- Add to cart / update quantity / remove from cart
-- Place an order and view order history
-- (Admin only, if you have it) Add/edit/remove products
+- Browse products by category
+- Add to cart, view cart, place an order
+- Manage delivery addresses
+- Make and track payments per order
+- Cancel an order
+- Admin-only product management (add/update/delete), gated by role-based frontend routes
 
 ## 🛠️ Tech Stack
-- **Backend:** Java, Spring Boot, Spring Security, Spring Data JPA, MySQL
-- **Frontend:** React, Bootstrap
-- **Auth:** JWT (stateless)
-- **Build tool:** Maven
+- **Backend:** Java, Spring Boot, Spring Security, Spring Data JPA, MySQL, Lombok
+- **Auth:** JWT (stateless), custom `JwtFilter` + `JwtUtil`
+- **Frontend:** React, Axios
+- **Deployment:** Dockerfile included for containerized backend deployment
 
 ## 🏗️ Architecture
-<!-- Example — edit to match reality: -->
-React frontend calls REST APIs secured by Spring Security. On login, the backend issues a JWT, which the frontend attaches to every subsequent request. Spring Data JPA maps entities (User, Product, Order, Cart) to MySQL tables, with joins used for order-history and cart-summary queries.
+The React frontend calls the backend through a JWT-secured REST API. Every request passes through a custom `JwtFilter` before reaching the controller. Controllers delegate to a service layer (interface + implementation), which uses Spring Data JPA repositories to persist and query MySQL. `SecurityConfig` wires up Spring Security to protect endpoints based on the authenticated user's role.
 
 ## 📡 API Endpoints
-<!-- Open your @RestController classes and list every endpoint here. Count them — that number goes straight on your resume as "X+ REST endpoints" instead of a vague claim. -->
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/auth/register | Register a new user |
-| POST | /api/auth/login | Authenticate and receive JWT |
-| GET | /api/products | List all products |
-| GET | /api/products/{id} | Get product details |
-| POST | /api/cart | Add item to cart |
-| GET | /api/cart | View current cart |
-| POST | /api/orders | Place an order |
-| GET | /api/orders | View order history |
-<!-- ^ Replace/extend with your ACTUAL endpoints -->
+| Controller | Method | Endpoint | Description |
+|---|--------|----------|-------------|
+| Auth | POST | /api/auth/register | Register a new user |
+| Auth | POST | /api/auth/login | Authenticate and receive JWT |
+| Products | POST | /api/products | Add a product |
+| Products | GET | /api/products | List all products |
+| Products | PUT | /api/products/{id} | Update a product |
+| Products | DELETE | /api/products/{id} | Delete a product |
+| Categories | POST | /api/categories | Add a category |
+| Categories | GET | /api/categories | List all categories |
+| Cart | GET | /api/cart/{userId} | Get a user's cart |
+| Cart | POST | /api/cart/add | Add item to cart |
+| Address | POST | /api/address/{userId} | Add an address for a user |
+| Address | GET | /api/address/{userId} | Get a user's addresses |
+| Orders | POST | /api/orders/place/{userId}/{addressId} | Place an order |
+| Orders | GET | /api/orders/user/{userId} | Get orders for a user |
+| Orders | GET | /api/orders/{orderId} | Get order details |
+| Orders | PUT | /api/orders/cancel/{orderId} | Cancel an order |
+| Payments | POST | /api/payments/pay/{orderId} | Make a payment for an order |
+| Payments | GET | /api/payments/order/{orderId} | Get payment by order |
+| Payments | GET | /api/payments/{paymentId} | Get payment by ID |
 
-## 🗄️ Database Schema
-<!-- List your actual tables/entities. This gives you a real "modeled X relational tables" fact for your resume. -->
-- Users
-- Products
-- Cart / CartItems
-- Orders / OrderItems
+**19 REST endpoints across 8 controllers.**
+
+## 🗄️ Database Schema (9 entities)
+User, Product, Category, Cart, CartItem, Order, OrderItem, Payment, Address
+
+## 🖥️ Frontend Pages (9)
+Login, Register, Products, Cart, Orders, Address, Add Product, Edit Product, Admin Products — with route guards (`AdminRoute`, `ProtectedRoute`, `UserOnlyRoute`) enforcing role-based access.
 
 ## ⚙️ Setup & Installation
 ```bash
 # Backend
-cd backend
-mvn clean install
-mvn spring-boot:run
+cd smart-mart
+./mvnw spring-boot:run
+# or with Docker:
+docker build -t smart-mart-backend .
+docker run -p 8080:8080 smart-mart-backend
 
 # Frontend
-cd frontend
+cd Smart-Mart-UI
 npm install
-npm start
+npm run dev
 ```
 
 ## 📸 Screenshots
-<!-- Add screenshots of login, product listing, cart, and checkout -->
+<!-- Add screenshots: login, product listing, cart, checkout, admin product management -->
 
 ## 🔮 Future Improvements
-- (e.g., payment gateway integration, product reviews, order tracking)
+- Product reviews and ratings
+- Real payment gateway integration (currently a payment record, not a live gateway)
+- Order tracking with status updates
 
 ## 👤 Author
 Adapa Phani Venkata Siddhardha — [LinkedIn](https://linkedin.com/in/adapa-phani-venkata-siddhardha) | [GitHub](https://github.com/siddharthadapa)
